@@ -15,11 +15,12 @@ app.get("/books",(req,res)=>{
 })
 
 //make our app ready for deployment
-if(ENV.NODE_ENV==="production"){
-    app.use(express.static(path.join(__dirname,"../client/dist")))
-    app.get("/{*any}",(req,res)=>{
-        res.sendFile(path.join(__dirname,"../client","dist","index.html"))
-    })
+if (ENV.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/dist")));
+
+  app.use((req, res) => {
+    res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+  });
 }
 
 app.listen(ENV.PORT,()=>console.log("Server is running on port "+ENV.PORT))
