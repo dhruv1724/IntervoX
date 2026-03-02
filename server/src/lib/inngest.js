@@ -22,6 +22,11 @@ const syncUser= inngest.createFunction(
         await User.create(newUser) //create a new user in database
 
         //to do :smth else
+        await upsertStreamUser({
+            id: newUser.clerkId.toString(),
+            name: newUser.name,
+            image: newUser.profileImage
+        });
     }
 )
 
@@ -36,7 +41,8 @@ const deleteUserFromDB= inngest.createFunction(
         await User.deleteOne({clerkId:id}) ;//delete the user from database whose clerkId matches the id from event data
 
         //todo :smth else
-    }
+            await deleteStreamUser(id.toString())
+    } 
 )
 
 export const functions = [syncUser,deleteUserFromDB]
