@@ -5,6 +5,8 @@ import { connectDB } from "./lib/db.js";
 import cors from "cors";
 import { inngest, functions } from "./lib/inngest.js";
 import { serve } from "inngest/express";
+import { clerkMiddleware } from '@clerk/express'
+import chatRoutes from "./routes/chatRoutes.js";
 
 const app =express()
 
@@ -21,14 +23,17 @@ app.use(cors({origin: ENV.CLIENT_URL,credentials:true})) //enable CORS for all r
 // running on one origin from accessing resources on a different origin. 
 // By enabling CORS, you allow your server to accept requests from other origins, 
 // which is essential for building APIs that can be consumed by web applications hosted on different domains.
+
+app.use(clerkMiddleware()) //use clerk middleware to handle authentication and user sessions
+//this adds auth property to the request object, which contains information about the authenticated user and their session.
+
 app.use("/api/inngest",serve({client:inngest,functions})) //serve inngest functions at the specified route
+app.use("/api/chat",chatRoutes) //use chat routes for handling chat related API requests
 
 app.get("/health",(req,res)=>{
     res.status(200).json({msg:"api is up and running"})
-})
-app.get("/books",(req,res)=>{
-    res.status(200).json({msg:"this is the books endpoint"})
-})
+});
+
 
 //make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
