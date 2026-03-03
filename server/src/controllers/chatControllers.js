@@ -7,7 +7,7 @@ export async function getStreamToken(req,res){
         res.status(200).json({
             token,
             userId:req.user.clerkId,
-            useName:req.user.firstName || "",
+            userName:req.user.firstName || "",
             userImage:req.user.image
         })
     } catch (error) {
