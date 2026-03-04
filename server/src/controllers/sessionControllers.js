@@ -11,7 +11,7 @@ export async function createSession(req,res){
             return res.status(400).json({message:"Problem and difficulty are required"})
         }
         //generate a unique call id for stream video
-        const callId=`session_${Date.now()}_${Math.random.toString(36).substring(7)}`
+        const callId=`session_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
         //creating this session in the data base
         const session=await Session.create({problem,difficulty,host:userId,callId});
