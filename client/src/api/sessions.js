@@ -27,12 +27,12 @@ export const sessionApi={
     },
 
     endSession: async (id) =>{
-        const response= await axiosInstance.post(`api/sessions/${id}/join/end`)
+        const response= await axiosInstance.post(`api/sessions/${id}/end`)
         return response.data
     },
 
     getStreamToken: async () =>{
-        const response= await axiosInstance.post(`api/chat/token`)
+        const response= await axiosInstance.get(`api/chat/token`)
         return response.data
     },
 }
