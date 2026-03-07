@@ -37,7 +37,7 @@ function DashboardPage() {
 
   const isUserInSession= (session)=>{
     if(!user.id) return false;
-    return session.host?.clerkId === user.id || session.participant?.clerkID === user.id
+    return session.host?.clerkId === user.id || session.participant?.clerkId === user.id
   }
   
   return (
