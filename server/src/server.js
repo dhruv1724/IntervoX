@@ -36,6 +36,54 @@ app.get("/health",(req,res)=>{
     res.status(200).json({msg:"api is up and running"})
 });
 
+app.post("/api/run-code", async (req, res) => {
+  const { language, code } = req.body;
+
+  try {
+
+    const languageMap = {
+      javascript: { language: "nodejs", versionIndex: "4" },
+      python: { language: "python3", versionIndex: "3" },
+      java: { language: "java", versionIndex: "4" }
+    };
+
+    const config = languageMap[language];
+
+    if (!config) {
+      return res.json({
+        success: false,
+        error: "Unsupported language"
+      });
+    }
+
+    const response = await fetch("https://api.jdoodle.com/v1/execute", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        script: code,
+        language: config.language,
+        versionIndex: config.versionIndex,
+        clientId: process.env.JDOODLE_CLIENT_ID,
+        clientSecret: process.env.JDOODLE_CLIENT_SECRET
+      })
+    });
+
+    const data = await response.json();
+
+    res.json({
+      run: {
+        output: data.output || "",
+        stderr: data.stderr || ""
+      }
+    });
+
+  } catch (error) {
+    console.error("Execution error:", error);
+    res.status(500).json({ error: "Execution failed" });
+  }
+});
 
 //make our app ready for deployment
 if (ENV.NODE_ENV === "production") {
