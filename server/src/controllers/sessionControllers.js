@@ -1,3 +1,4 @@
+import mongoose from "mongoose"
 import Session from "../models/Session.js"
 import { chatClient, streamClient } from "../lib/stream.js"
 
@@ -13,25 +14,26 @@ export async function createSession(req,res){
         //generate a unique call id for stream video
         const callId=`session_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
-        //creating this session in the data base
-        const session=await Session.create({problem,difficulty,host:userId,callId});
+        //pre-generate the session id so the DB write, video call creation, and chat channel
+        //creation have no dependency on each other and can run concurrently instead of serially
+        const sessionId=new mongoose.Types.ObjectId();
 
-        //create stream video call
-        await streamClient.video.call("default",callId).getOrCreate({
-            data:{
-                created_by_id:clerkId,
-                custom: {problem,difficulty,sessionId: session._id.toString()}
-            }
-        });
-
-        //chat messaging
         const channel=chatClient.channel("messaging",callId,{
             name: `${problem} Session`,
             created_by_id:clerkId,
             members:[clerkId]
         })
 
-        await channel.create();
+        const [session]=await Promise.all([
+            Session.create({_id:sessionId,problem,difficulty,host:userId,callId}),
+            streamClient.video.call("default",callId).getOrCreate({
+                data:{
+                    created_by_id:clerkId,
+                    custom: {problem,difficulty,sessionId: sessionId.toString()}
+                }
+            }),
+            channel.create()
+        ]);
 
         res.status(201).json({session:session}) //key-value
     } catch (error) {
@@ -133,17 +135,19 @@ export async function endSession(req,res){
         }
 
 
-        //delete stream video call
-        const call=streamClient.video.call("default",session.callId)
-        await call.delete({hard:true})
-
-        //delete stream chat channel
-        const channel= chatClient.channel("messaging", session.callId)
-        await channel.delete();
-
         //make it completed
         session.status="completed";
-        await session.save();
+
+        const call=streamClient.video.call("default",session.callId)
+        const channel= chatClient.channel("messaging", session.callId)
+
+        //these three are independent of each other's results, so run them concurrently
+        //instead of paying for each round trip serially
+        await Promise.all([
+            call.delete({hard:true}),
+            channel.delete(),
+            session.save()
+        ]);
 
         res.status(200).json({session,message:"Session ended successfully"})
      } catch (error) {
