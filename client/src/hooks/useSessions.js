@@ -10,7 +10,7 @@ export const useCreateSession=()=>{
     const result= useMutation({
         mutationFn: sessionApi.createSession,
         onSuccess: ()=>toast.success("session created successfully"),
-        onError: ()=>toast.error(error.response?.data?.message ||" Failed to create room"),
+        onError: (error)=>toast.error(error.response?.data?.message ||" Failed to create room"),
     });
     return result;
 }
@@ -47,7 +47,7 @@ export const  useJoinSession=()=>{
         mutationKey: ["joinSession"],
         mutationFn: sessionApi.joinSession,
         onSuccess: ()=> toast.success("Joined session successfully"),
-        onError: ()=> toast.error(error.response?.data?.message || "Failed to join session")
+        onError: (error)=> toast.error(error.response?.data?.message || "Failed to join session")
     })
 }
 
@@ -56,6 +56,6 @@ export const  useEndSession=()=>{
         mutationKey: ["endSession"],
         mutationFn: sessionApi.endSession,
         onSuccess: ()=> toast.success("Session ended successfully"),
-        onError: ()=> toast.error(error.response?.data?.message || "Failed to end session")
+        onError: (error)=> toast.error(error.response?.data?.message || "Failed to end session")
     })
 }

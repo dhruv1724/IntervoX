@@ -26,6 +26,7 @@ export async function executeCode(language, code) {
 
     const response = await fetch(PISTON_API, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -35,6 +36,20 @@ export async function executeCode(language, code) {
           code: code,
         }),
     });
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        error: "You need to be signed in to run code.",
+      };
+    }
+
+    if (response.status === 429) {
+      return {
+        success: false,
+        error: "Too many code executions — please wait a moment and try again.",
+      };
+    }
 
     if (!response.ok) {
       return {

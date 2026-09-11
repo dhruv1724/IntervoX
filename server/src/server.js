@@ -6,8 +6,10 @@ import cors from "cors";
 import { inngest, functions } from "./lib/inngest.js";
 import { serve } from "inngest/express";
 import { clerkMiddleware } from '@clerk/express'
+import { rateLimit } from "express-rate-limit";
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js"
+import { protectRoute } from "./middleware/protectRoute.js";
 
 const app =express()
 
@@ -36,7 +38,16 @@ app.get("/health",(req,res)=>{
     res.status(200).json({msg:"api is up and running"})
 });
 
-app.post("/api/run-code", async (req, res) => {
+const runCodeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10, // max 10 code executions per user per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?._id?.toString() || req.ip,
+  message: { error: "Too many code executions, please slow down and try again shortly." },
+});
+
+app.post("/api/run-code", protectRoute, runCodeLimiter, async (req, res) => {
   const { language, code } = req.body;
 
   try {

@@ -7,8 +7,8 @@ export async function getStreamToken(req,res){
         res.status(200).json({
             token,
             userId:req.user.clerkId,
-            userName:req.user.firstName || "",
-            userImage:req.user.image
+            userName:req.user.name || "",
+            userImage:req.user.profileImage
         })
     } catch (error) {
         console.log("❌ Error generating stream token",error);
