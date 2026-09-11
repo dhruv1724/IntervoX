@@ -47,6 +47,8 @@ const runCodeLimiter = rateLimit({
   message: { error: "Too many code executions, please slow down and try again shortly." },
 });
 
+const JDOODLE_TIMEOUT_MS = 15000; // JDoodle typically responds in ~1.5-2s; this only bounds the pathological/hung case
+
 app.post("/api/run-code", protectRoute, runCodeLimiter, async (req, res) => {
   const { language, code } = req.body;
 
@@ -67,19 +69,28 @@ app.post("/api/run-code", protectRoute, runCodeLimiter, async (req, res) => {
       });
     }
 
-    const response = await fetch("https://api.jdoodle.com/v1/execute", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        script: code,
-        language: config.language,
-        versionIndex: config.versionIndex,
-        clientId: process.env.JDOODLE_CLIENT_ID,
-        clientSecret: process.env.JDOODLE_CLIENT_SECRET
-      })
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), JDOODLE_TIMEOUT_MS);
+
+    let response;
+    try {
+      response = await fetch("https://api.jdoodle.com/v1/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          script: code,
+          language: config.language,
+          versionIndex: config.versionIndex,
+          clientId: process.env.JDOODLE_CLIENT_ID,
+          clientSecret: process.env.JDOODLE_CLIENT_SECRET
+        }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
 
@@ -91,6 +102,10 @@ app.post("/api/run-code", protectRoute, runCodeLimiter, async (req, res) => {
     });
 
   } catch (error) {
+    if (error.name === "AbortError") {
+      console.error("JDoodle request timed out");
+      return res.status(504).json({ error: "Code execution timed out. Please try again." });
+    }
     console.error("Execution error:", error);
     res.status(500).json({ error: "Execution failed" });
   }

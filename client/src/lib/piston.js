@@ -51,6 +51,13 @@ export async function executeCode(language, code) {
       };
     }
 
+    if (response.status === 504) {
+      return {
+        success: false,
+        error: "Code execution timed out. Please try again.",
+      };
+    }
+
     if (!response.ok) {
       return {
         success: false,
